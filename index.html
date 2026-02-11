@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Totem Moto Clube - Autoatendimento</title>
+    <style>
+    :root {
+        --preto: #000000;
+        --cinza-card: #1a1a1a;
+        --laranja-vibrante: #ff2600;
+        --texto: #ffffff;
+    }
+
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-image: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('transferir.jpeg');
+        background-attachment: fixed;
+        background-position: 30% 50%;
+        background-size: 50%;
+        background-repeat: no-repeat;
+        background-color: var(--preto);
+        color: var(--texto);
+        margin: 0;
+        display: flex;
+        height: 100vh;
+        overflow: hidden;
+    }
+
+    /* Colunas principais */
+    .sidebar { width: 15%; background-color: var(--cinza-card); display: flex; flex-direction: column; border-right: 2px solid #333; position: relative; }
+    
+    /* CORREÇÃO AQUI: Mudamos overflow para hidden no container pai e auto no eixo Y */
+    .main-content { 
+        flex: 1; 
+        padding: 20px; 
+        overflow-y: auto; 
+        position: relative; 
+        display: flex; 
+        flex-direction: column; 
+    }
+
+    /* ESTILIZAÇÃO DA BARRA DE ROLAGEM (Scrollbar) */
+    .main-content::-webkit-scrollbar {
+        width: 10px;
+    }
+    .main-content::-webkit-scrollbar-track {
+        background: var(--preto);
+    }
+    .main-content::-webkit-scrollbar-thumb {
+        background: #333;
+        border-radius: 5px;
+        border: 2px solid var(--preto);
+    }
+    .main-content::-webkit-scrollbar-thumb:hover {
+        background: var(--laranja-vibrante);
+    }
+
+    .cart-panel { width: 30%; background-color: var(--cinza-card); border-left: 2px solid #333; display: flex; flex-direction: column; padding: 20px; transition: all 0.5s ease-in-out; }
+    .cart-panel.hidden { width: 0; padding: 0; border-left: 0; opacity: 0; pointer-events: none; }
+
+    /* Botões lateral */
+    .cat-btn { padding: 30px 10px; background: none; border: none; color: white; font-weight: bold; cursor: pointer; border-bottom: 1px solid #333; font-size: 1.1rem; }
+    .cat-btn.active { background-color: var(--laranja-vibrante); }
+
+    /* Grid de Produtos */
+    .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; width: 100%; }
+    .product-card { background-color: var(--cinza-card); border-radius: 12px; padding: 15px; text-align: center; border: 1px solid #333; animation: surgir 0.5s ease forwards; }
+    .product-card img { width: 100%; height: 180px; object-fit: contain; border-radius: 8px; background-color: #111; margin-bottom: 10px; }
+    .price { color: var(--laranja-vibrante); font-size: 1.3rem; font-weight: bold; display: block; margin-bottom: 10px; }
+    
+    /* --- CORREÇÃO DOS BOTÕES DE + e - --- */
+    .controls { display: flex; justify-content: center; align-items: center; gap: 15px; }
+    .btn-qty { 
+        background-color: #333; 
+        color: white; 
+        border: none; 
+        padding: 10px 20px; 
+        border-radius: 5px; 
+        font-size: 1.5rem; 
+        font-weight: bold;
+        cursor: pointer; 
+    }
+    .btn-qty:active { background-color: var(--laranja-vibrante); }
+
+    /* --- CORREÇÃO DO BOTÃO PAGAR --- */
+    .btn-pay {
+        background-color: var(--laranja-vibrante);
+        color: white;
+        border: none;
+        width: 100%;
+        padding: 20px;
+        font-size: 1.5rem;
+        font-weight: bold;
+        border-radius: 8px;
+        cursor: pointer;
+        margin-top: 15px;
+    }
+    .btn-pay:active { transform: scale(0.98); }
+
+    /* Admin e Modais */
+    .admin-trigger { position: absolute; bottom: 0; left: 0; width: 60px; height: 60px; background: transparent; z-index: 9999; }
+    .modal-admin { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #1a1a1a; border: 2px solid var(--laranja-vibrante); padding: 30px; border-radius: 15px; z-index: 10000; width: 320px; text-align: center; box-shadow: 0 0 50px #000; }
+    
+    #painelAdmin { display: none; position: fixed; top: 5%; left: 5%; width: 90%; height: 90%; background: #111; z-index: 10001; border: 2px solid var(--laranja-vibrante); border-radius: 15px; padding: 20px; overflow-y: auto; color: white; }
+    .admin-grid { display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px; }
+    .admin-card { background: #222; padding: 20px; border-radius: 10px; border: 1px solid #333; }
+    .input-admin { background: #000; border: 1px solid #444; color: white; padding: 10px; margin-bottom: 10px; width: 95%; border-radius: 5px; }
+    
+    .tabela-admin { width: 100%; border-collapse: collapse; }
+    .tabela-admin th, .tabela-admin td { text-align: left; padding: 12px; border-bottom: 1px solid #333; }
+    .btn-excluir { background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+
+    @keyframes surgir { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+</style>
+</head>
+<body>
+
+    <div class="admin-trigger" onclick="pedirSenha()"></div>
+    <div id="modalSenha" class="modal-admin">
+        <h2 style="color: var(--laranja-vibrante); margin: 0;">Acesso Restrito</h2>
+        <p>Senha do Administrador:</p>
+        <input type="password" id="campoSenha" style="width: 80%; padding: 10px; margin: 15px 0; text-align: center;">
+        <button onclick="validarSenha()" style="width: 100%; padding: 10px; background: var(--laranja-vibrante); border: none; color: white; font-weight: bold; cursor: pointer;">ENTRAR</button>
+        <button onclick="fecharSenha()" style="width: 100%; padding: 10px; background: #333; border: none; color: white; margin-top: 10px; cursor: pointer;">CANCELAR</button>
+    </div>
+
+    <div id="painelAdmin">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--laranja-vibrante); padding-bottom: 10px; margin-bottom: 20px;">
+            <h1 style="margin: 0; color: var(--laranja-vibrante);">Configurações Reduto</h1>
+            <button onclick="fecharPainelAdmin()" style="background: #dc3545; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold;">FECHAR E SALVAR</button>
+        </div>
+
+        <div class="admin-grid">
+            <div class="admin-card">
+                <h3>+ Novo Item</h3>
+                <input type="text" id="novoNome" class="input-admin" placeholder="Nome do Produto">
+                <input type="number" id="novoPreco" class="input-admin" placeholder="Preço (ex: 12.00)">
+                <input type="text" id="novaImg" class="input-admin" placeholder="Nome da Foto (ex: foto.jpg)">
+                <select id="novaCat" class="input-admin">
+                    <option value="bebidas">Bebidas</option>
+                    <option value="comidas">Comidas</option>
+                </select>
+                <button onclick="adicionarProduto()" style="width: 100%; padding: 15px; background: #28a745; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer;">CADASTRAR</button>
+            </div>
+
+            <div class="admin-card">
+                <h3>Cardápio Atual</h3>
+                <div style="max-height: 500px; overflow-y: auto;">
+                    <table class="tabela-admin">
+                        <thead>
+                            <tr><th>Item</th><th>Preço</th><th>Ação</th></tr>
+                        </thead>
+                        <tbody id="corpoTabelaAdmin"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="sidebar">
+        <button class="cat-btn active" onclick="filtrar('inicio')">INICIO</button>
+        <button class="cat-btn" onclick="filtrar('bebidas')">BEBIDAS</button>
+        <button class="cat-btn" onclick="filtrar('comidas')">COMIDAS</button>
+    </div>
+
+    <div class="main-content">
+        <div class="products-grid" id="grid-produtos"></div>
+    </div>
+
+    <div class="cart-panel">
+        <h2>Seu Pedido</h2>
+        <div id="carrinho-lista" style="flex:1; overflow-y:auto;"></div>
+        <div style="border-top: 3px solid var(--laranja-vibrante); padding-top: 20px;">
+            <span class="total-price" id="total-valor">R$ 0,00</span>
+            <button class="btn-pay" onclick="finalizarPedido()">PAGAR AGORA</button>
+        </div>
+    </div>
+
+    <script>
+        // 1. BANCO DE DADOS LOCAL
+        const PRODUTOS_PADRAO = [
+            { id: 1, nome: 'Cerveja Heineken 350ML', preco: 9.00, cat: 'bebidas', img: 'heineken.jpg' },
+            { id: 2, nome: 'Cerveja Spaten 259ML', preco: 6.00, cat: 'bebidas', img: 'spaten.jpg' },
+            { id: 3, nome: 'Espetinho Carne', preco: 12.00, cat: 'comidas', img: 'Carne.jpg' },
+            { id: 4, nome: 'Espetinho Frango', preco: 10.00, cat: 'comidas', img: 'Frango.jpg' }
+        ];
+
+        let produtos = JSON.parse(localStorage.getItem('reduto_produtos')) || PRODUTOS_PADRAO;
+        let carrinho = [];
+
+        function sincronizar() {
+            localStorage.setItem('reduto_produtos', JSON.stringify(produtos));
+        }
+
+        // 2. ACESSO ADMIN
+        function pedirSenha() { document.getElementById('modalSenha').style.display = 'block'; }
+        function fecharSenha() { document.getElementById('modalSenha').style.display = 'none'; document.getElementById('campoSenha').value = ''; }
+        
+        function validarSenha() {
+            if (document.getElementById('campoSenha').value === "1234") {
+                fecharSenha();
+                document.getElementById('painelAdmin').style.display = 'block';
+                atualizarListaAdmin();
+            } else { alert("Senha incorreta!"); }
+        }
+
+        function fecharPainelAdmin() {
+            document.getElementById('painelAdmin').style.display = 'none';
+            filtrar('inicio');
+        }
+
+        // 3. GERENCIAMENTO DE PRODUTOS
+        function atualizarListaAdmin() {
+            const corpo = document.getElementById('corpoTabelaAdmin');
+            corpo.innerHTML = '';
+            produtos.forEach(p => {
+                corpo.innerHTML += `
+                    <tr>
+                        <td>${p.nome}</td>
+                        <td><input type="number" step="0.1" value="${p.preco}" onchange="editarPreco(${p.id}, this.value)" style="width:60px; background:#000; color:#fff; border:1px solid #444;"></td>
+                        <td><button onclick="excluirProduto(${p.id})" class="btn-excluir">X</button></td>
+                    </tr>`;
+            });
+        }
+
+        function adicionarProduto() {
+            const nome = document.getElementById('novoNome').value;
+            const preco = parseFloat(document.getElementById('novoPreco').value);
+            const img = document.getElementById('novaImg').value;
+            const cat = document.getElementById('novaCat').value;
+
+            if (nome && preco && img) {
+                produtos.push({ id: Date.now(), nome, preco, img, cat });
+                sincronizar();
+                atualizarListaAdmin();
+                alert("Produto Adicionado!");
+                document.getElementById('novoNome').value = '';
+                document.getElementById('novoPreco').value = '';
+                document.getElementById('novaImg').value = '';
+            } else { alert("Preencha tudo!"); }
+        }
+
+        function editarPreco(id, valor) {
+            const p = produtos.find(i => i.id === id);
+            if (p) { p.preco = parseFloat(valor); sincronizar(); }
+        }
+
+        function excluirProduto(id) {
+            if (confirm("Excluir item?")) {
+                produtos = produtos.filter(i => i.id !== id);
+                sincronizar();
+                atualizarListaAdmin();
+            }
+        }
+
+        // 4. LÓGICA DO TOTEM
+        function renderizarProdutos(filtro = 'inicio') {
+            const grid = document.getElementById('grid-produtos');
+            const cart = document.querySelector('.cart-panel');
+            grid.innerHTML = '';
+
+            if (filtro === 'inicio') {
+                cart.classList.add('hidden');
+                grid.innerHTML = `
+                    <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; width:100%;">
+                        <h1 style="color:var(--laranja-vibrante); font-size:3.5rem;">BEM-VINDO AO REDUTO!</h1>
+                        <p style="font-size:1.5rem;">Escolha uma categoria para começar.</p>
+                    </div>`;
+                return;
+            }
+
+            cart.classList.remove('hidden');
+            setTimeout(() => {
+                produtos.filter(p => p.cat === filtro).forEach(p => {
+                    grid.innerHTML += `
+                        <div class="product-card">
+                            <img src="${p.img}" onerror="this.src='https://via.placeholder.com/180?text=Sem+Foto'">
+                            <h3>${p.nome}</h3>
+                            <span class="price">R$ ${p.preco.toFixed(2)}</span>
+                            <div class="controls">
+                                <button class="btn-qty" onclick="alterarQtd(${p.id}, -1)">-</button>
+                                <button class="btn-qty" onclick="alterarQtd(${p.id}, 1)">+</button>
+                            </div>
+                        </div>`;
+                });
+            }, 550);
+        }
+
+        function filtrar(cat) {
+            renderizarProdutos(cat);
+            document.querySelectorAll('.cat-btn').forEach(b => b.classList.toggle('active', b.innerText.toLowerCase() === cat));
+        }
+
+        function alterarQtd(id, delta) {
+            const item = carrinho.find(i => i.id === id);
+            if (item) {
+                item.qtd += delta;
+                if (item.qtd <= 0) carrinho = carrinho.filter(i => i.id !== id);
+            } else if (delta > 0) {
+                const p = produtos.find(i => i.id === id);
+                carrinho.push({ ...p, qtd: 1 });
+            }
+            atualizarCarrinho();
+        }
+
+        function atualizarCarrinho() {
+            const lista = document.getElementById('carrinho-lista');
+            let total = 0;
+            lista.innerHTML = '';
+            carrinho.forEach(i => {
+                total += i.preco * i.qtd;
+                lista.innerHTML += `<div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #333;">
+                    <span>${i.qtd}x ${i.nome}</span><span>R$ ${(i.preco*i.qtd).toFixed(2)}</span></div>`;
+            });
+            document.getElementById('total-valor').innerText = `R$ ${total.toFixed(2)}`;
+        }
+
+        function finalizarPedido() {
+            if (carrinho.length === 0) return alert("Carrinho vazio!");
+            alert("Pagamento confirmado! Retire seus Tictis.");
+            carrinho = []; atualizarCarrinho(); filtrar('inicio');
+        }
+
+        filtrar('inicio');
+    </script>
+</body>
+</html>
