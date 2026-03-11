@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Chronicle - Notícias Online</title>
+    <title>The Chronicle - Digital</title>
     <link href="https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&family=Old+Standard+TT:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Old Standard TT', serif; background: #f4f1ea; color: #1a1a1a; margin: 0; padding: 15px; display: flex; justify-content: center; }
@@ -15,9 +15,9 @@
         .main-content { display: grid; grid-template-columns: 310px 1fr; gap: 30px; }
         .sidebar { border-right: 2px solid #eee; padding-right: 20px; }
         h2 { font-size: 1.1rem; border-bottom: 2px solid #d32f2f; color: #d32f2f; padding-bottom: 5px; text-transform: uppercase; margin-top: 0; margin-bottom: 15px; }
-        .logo-jornal { height: 40px; object-fit: contain; margin-bottom: 15px; filter: grayscale(1); }
+        .logo-jornal { height: 45px; max-width: 200px; object-fit: contain; margin-bottom: 15px; display: block; }
         .headline { font-size: 2.1rem; font-weight: bold; line-height: 1.1; color: #000; margin-bottom: 15px; min-height: 80px; }
-        .noticia-imagem { width: 100%; height: 320px; object-fit: cover; border: 1px solid #000; margin-top: 10px; background: #eee; }
+        .noticia-imagem { width: 100%; height: 350px; object-fit: cover; border: 1px solid #000; margin-top: 10px; background: #eee; }
         .fade { animation: fadeIn 0.8s ease-out; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         table { width: 100%; font-size: 1.2rem; border-collapse: collapse; }
@@ -37,24 +37,33 @@
     </header>
     <div class="main-content">
         <div class="sidebar">
-            <div id="coluna-esquerda">
-                <h2 id="titulo-base">CÂMBIO</h2>
-                <div id="conteudo-base" class="fade">Iniciando câmbio...</div>
-            </div>
+            <h2 id="titulo-base">CÂMBIO</h2>
+            <div id="conteudo-base" class="fade">Carregando...</div>
         </div>
         <div class="content">
-            <h2>DESTAQUE DO MOMENTO</h2>
-            <div id="container-noticia" class="fade">Conectando aos servidores de notícias...</div>
+            <h2>DESTAQUE</h2>
+            <div id="container-noticia" class="fade">Sincronizando notícias...</div>
         </div>
     </div>
 </div>
 
 <script>
-    // Lista de jornais com feeds estáveis
     const jornais = [
-        { nome: "G1", rss: "https://g1.globo.com/rss/g1/", logo: "https://s2-g1.glbimg.com/_0N0p7H4eO0_Xn0_Xn0_Xn0=/i.s3.glbimg.com/v1/AUTH_59edd422c1284fa893bb774f4b23d90b/static/g1/img/g1-logo.png" },
-        { nome: "Metrópoles", rss: "https://www.metropoles.com/feed", logo: "https://www.metropoles.com/wp-content/themes/metropoles-2023/assets/img/logo-metropoles.png" },
-        { nome: "BBC Brasil", rss: "https://feeds.bbci.co.uk/portuguese/rss.xml", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/41/BBC_World_News_2022.svg/2560px-BBC_World_News_2022.svg.png" }
+        { 
+            nome: "G1", 
+            rss: "https://g1.globo.com/rss/g1/", 
+            logo: "https://s2-g1.glbimg.com/uG9X_8U6_F_O1_X_O1_X_O1_X=/i.s3.glbimg.com/v1/AUTH_59edd422c1284fa893bb774f4b23d90b/static/g1/img/g1-logo.png" 
+        },
+        { 
+            nome: "BBC Brasil", 
+            rss: "https://feeds.bbci.co.uk/portuguese/rss.xml", 
+            logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/41/BBC_World_News_2022.svg/1024px-BBC_World_News_2022.svg.png" 
+        },
+        { 
+            nome: "Metrópoles", 
+            rss: "https://www.metropoles.com/feed", 
+            logo: "https://apice.metropoles.com/wp-content/uploads/2023/04/Metropoles_Vertical_Positiva.png"
+        }
     ];
 
     let indexNoticia = 0;
@@ -64,19 +73,20 @@
         const cont = document.getElementById('container-noticia');
         const j = jornais[indexNoticia];
         
-        // Proxy rss2json para evitar erro de autorização/CORS no GitHub
-        const urlFinal = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(j.rss)}&api_key=00000000000000000000000000000000`; // Chave vazia funciona para testes
+        // Usando o proxy rss2json para converter o XML do RSS em JSON amigável
+        const urlFinal = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(j.rss)}`;
 
         try {
             const resp = await fetch(urlFinal);
+            if (!resp.ok) throw new Error("Falha na rede");
+            
             const data = await resp.json();
+            if (data.status !== 'ok') throw new Error("Erro no feed");
 
-            if (data.status !== 'ok') throw new Error("Erro no servidor");
-
-            const item = data.items[0]; // Pega a notícia mais recente
+            const item = data.items[0];
             let imgUrl = item.enclosure.link || item.thumbnail || "";
 
-            // Tenta extrair imagem do texto se não estiver no campo padrão (comum no G1)
+            // Busca imagem alternativa se estiver escondida no HTML da descrição
             if (!imgUrl && item.description) {
                 const imgMatch = item.description.match(/<img[^>]+src="([^">]+)"/);
                 if (imgMatch) imgUrl = imgMatch[1];
@@ -84,15 +94,16 @@
 
             cont.innerHTML = `
                 <div class="fade">
-                    <img src="${j.logo}" class="logo-jornal">
+                    <img src="${j.logo}" class="logo-jornal" alt="${j.nome}">
                     <div class="headline">${item.title}</div>
-                    ${imgUrl ? `<img src="${imgUrl}" class="noticia-imagem">` : '<div style="height:100px; background:#eee; display:flex; align-items:center; justify-content:center;">Sem imagem disponível</div>'}
+                    ${imgUrl ? `<img src="${imgUrl}" class="noticia-imagem">` : ''}
                 </div>`;
         } catch (e) {
-            console.error("Erro ao buscar notícia:", e);
-            cont.innerHTML = `<div class="fade">Tentando carregar manchetes do ${j.nome}...</div>`;
+            console.error("Erro no jornal:", j.nome, e);
+            cont.innerHTML = `<div class="fade">Aguardando sinal de ${j.nome}...</div>`;
         }
 
+        // Prepara o próximo jornal para o próximo ciclo
         indexNoticia = (indexNoticia + 1) % jornais.length;
     }
 
@@ -126,14 +137,13 @@
         document.getElementById('data-atual').innerText = agora.toLocaleDateString('pt-br', { day: 'numeric', month: 'long', year: 'numeric' });
     }
 
-    // Inicialização
+    // Inicialização e Ciclos
     atualizarTempo();
     rodizioNoticias();
     rodizioBase();
 
-    // Timers
     setInterval(atualizarTempo, 1000);
-    setInterval(rodizioNoticias, 15000); // Muda notícia a cada 15 segundos
+    setInterval(rodizioNoticias, 15000); // 15 segundos para ler cada notícia
     setInterval(rodizioBase, 10000);
 </script>
 </body>
