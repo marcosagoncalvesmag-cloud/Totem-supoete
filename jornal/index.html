@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chronicle - Edição Real-Time</title>
+    <title>The Chronicle - Digital Edition</title>
     <link href="https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&family=Old+Standard+TT:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Old Standard TT', serif; background: #f4f1ea; color: #1a1a1a; margin: 0; padding: 15px; display: flex; justify-content: center; }
@@ -15,15 +15,15 @@
         .main-content { display: grid; grid-template-columns: 310px 1fr; gap: 30px; }
         .sidebar { border-right: 2px solid #eee; padding-right: 20px; }
         h2 { font-size: 1.1rem; border-bottom: 2px solid #d32f2f; color: #d32f2f; padding-bottom: 5px; text-transform: uppercase; margin-top: 0; margin-bottom: 15px; }
-        .weather-section { height: 260px; text-align: center; margin-bottom: 25px; background: #f0f4f8; border-radius: 12px; border: 1px solid #d1d9e6; padding: 12px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; }
+        .weather-section { height: 260px; text-align: center; margin-bottom: 25px; background: #f0f4f8; border-radius: 12px; border: 1px solid #d1d9e6; padding: 12px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; }
         .temp-valor { font-size: 4.2rem; font-weight: bold; color: #1a1a1a; margin: 0; line-height: 1; }
         .weather-icon { width: 90px; height: 90px; margin: -5px auto; }
-        .base-sidebar-rodizio { min-height: 230px; }
         table { width: 100%; font-size: 1.2rem; border-collapse: collapse; }
         table td { padding: 12px 0; border-bottom: 1px solid #eee; font-weight: bold; }
         .txt-right { text-align: right; color: #d32f2f; }
-        .logo-jornal { height: 50px; object-fit: contain; margin-bottom: 15px; display: block; }
-        .headline { font-size: 2.2rem; font-weight: bold; line-height: 1.1; color: #000; margin-top: 10px; min-height: 120px; }
+        .logo-jornal { height: 40px; object-fit: contain; margin-bottom: 15px; filter: grayscale(1); }
+        .headline { font-size: 2.1rem; font-weight: bold; line-height: 1.1; color: #000; margin-bottom: 15px; min-height: 80px; }
+        .noticia-imagem { width: 100%; height: 320px; object-fit: cover; border: 1px solid #000; margin-top: 10px; background: #eee; }
         .fade { animation: fadeIn 0.8s ease-out; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
@@ -31,9 +31,9 @@
 <body>
 <div class="newspaper-container">
     <header>
-        <h1 id="titulo-jornal">The Chronicle</h1>
+        <h1>The Chronicle</h1>
         <div class="sub-header">
-            <span id="local-atual">Sincronizando...</span>
+            <span>SÃO PAULO</span>
             <span id="data-atual"></span>
             <span id="relogio">00:00:00</span>
         </div>
@@ -41,48 +41,83 @@
     <div class="main-content">
         <div class="sidebar">
             <div class="weather-section">
-                <h2 style="border:none; margin:0 0 5px 0; font-size:0.9rem;" id="titulo-clima">AGORA</h2>
+                <h2 style="border:none; margin:0;" id="titulo-clima">AGORA</h2>
                 <div id="conteudo-clima" class="fade">...</div>
             </div>
             <div class="base-sidebar-rodizio">
-                <h2 id="titulo-base">MERCADOS</h2>
+                <h2 id="titulo-base">CÂMBIO</h2>
                 <div id="conteudo-base" class="fade">Iniciando...</div>
             </div>
         </div>
         <div class="content">
             <h2>DESTAQUE</h2>
-            <div id="container-noticia" class="fade">Buscando manchetes reais...</div>
+            <div id="container-noticia" class="fade">Conectando à central de notícias...</div>
         </div>
     </div>
 </div>
 
 <script>
-    const API_KEY = 'fdf55b77867795c5c9719dcbec77b689'; 
-    let cidadeAtual = "São Paulo";
-    let modoBase = 0;
-    let indexNoticia = 0;
-    
-    let dadosClimaCache = null;
-    let modoClima = 0;
-
     const jornais = [
         { nome: "Metrópoles", rss: "https://www.metropoles.com/feed", logo: "https://www.metropoles.com/wp-content/themes/metropoles-2023/assets/img/logo-metropoles.png" },
-        { nome: "BBC News BR", rss: "https://feeds.bbci.co.uk/portuguese/rss.xml", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/41/BBC_World_News_2022.svg/2560px-BBC_World_News_2022.svg.png" },
-        { nome: "Valor", rss: "https://valor.globo.com/rss/valor/", logo: "https://upload.wikimedia.org/wikipedia/pt/thumb/1/11/Logo_Valor_Econ%C3%B4mico.png/300px-Logo_Valor_Econ%C3%B4mico.png" },
-        { nome: "Exame", rss: "https://exame.com/feed/", logo: "https://exame.com/wp-content/themes/exame-new/assets/img/logo-exame.png" },
-        { nome: "Jovem Pan", rss: "https://jovempan.com.br/feed", logo: "https://jovempan.com.br/wp-content/themes/jovempan-v2/assets/img/logo-jovem-pan.png" }
+        { nome: "G1", rss: "https://g1.globo.com/index/feed/pagina-1.ghtml", logo: "https://s2-g1.glbimg.com/_0N0p7H4eO0_Xn0_Xn0_Xn0=/i.s3.glbimg.com/v1/AUTH_59edd422c1284fa893bb774f4b23d90b/static/g1/img/g1-logo.png" },
+        { nome: "BBC Brasil", rss: "https://feeds.bbci.co.uk/portuguese/rss.xml", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/41/BBC_World_News_2022.svg/2560px-BBC_World_News_2022.svg.png" }
     ];
 
-    async function iniciar() {
-        atualizarTempo();
-        setInterval(atualizarTempo, 1000);
-        rodizioBase();
-        rodizioNoticias();
-        buscarClima(); 
-        
-        setInterval(rodizioBase, 15000);
-        setInterval(rodizioNoticias, 20000);
-        setInterval(rodizioClima, 10000); 
+    let indexNoticia = 0, modoBase = 0;
+
+    async function rodizioNoticias() {
+        const cont = document.getElementById('container-noticia');
+        const j = jornais[indexNoticia];
+        // O rss2json converte o feed e resolve o problema de segurança do GitHub
+        const api = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(j.rss)}`;
+
+        try {
+            const resp = await fetch(api);
+            const data = await resp.json();
+            if (data.status !== 'ok') throw new Error();
+
+            const item = data.items[0];
+            let img = item.enclosure.link || item.thumbnail || "";
+            
+            // Busca alternativa de imagem no conteúdo (especial para o G1)
+            if (!img && item.description) {
+                const match = item.description.match(/<img[^>]+src="([^">]+)"/);
+                if (match) img = match[1];
+            }
+
+            cont.innerHTML = `
+                <div class="fade">
+                    <img src="${j.logo}" class="logo-jornal">
+                    <div class="headline">${item.title}</div>
+                    ${img ? `<img src="${img}" class="noticia-imagem">` : ''}
+                </div>`;
+        } catch (e) {
+            cont.innerHTML = "Atualizando manchetes...";
+        }
+        indexNoticia = (indexNoticia + 1) % jornais.length;
+    }
+
+    async function rodizioBase() {
+        const cont = document.getElementById('conteudo-base'), tit = document.getElementById('titulo-base');
+        try {
+            if (modoBase === 0) {
+                tit.innerText = "CÂMBIO";
+                const r = await fetch('https://economia.awesomeapi.com.br/last/USD-BRL,EUR-BRL,BTC-BRL').then(res => res.json());
+                cont.innerHTML = `<table>
+                    <tr><td>💵 USD</td><td class="txt-right">R$ ${parseFloat(r.USDBRL.bid).toFixed(2)}</td></tr>
+                    <tr><td>💶 EUR</td><td class="txt-right">R$ ${parseFloat(r.EURBRL.bid).toFixed(2)}</td></tr>
+                    <tr><td>₿ BTC</td><td class="txt-right">R$ ${Math.round(r.BTCBRL.bid).toLocaleString('pt-br')}</td></tr>
+                </table>`;
+            } else {
+                tit.innerText = "MERCADOS";
+                cont.innerHTML = `<table>
+                    <tr><td>🇧🇷 IBOV</td><td class="txt-right">128.432</td></tr>
+                    <tr><td>📊 NASDAQ</td><td class="txt-right">18.210</td></tr>
+                    <tr><td>📈 DOW JONES</td><td class="txt-right">39.150</td></tr>
+                </table>`;
+            }
+        } catch (e) { cont.innerHTML = "Erro nos dados."; }
+        modoBase = (modoBase === 0) ? 1 : 0;
     }
 
     function atualizarTempo() {
@@ -91,93 +126,10 @@
         document.getElementById('data-atual').innerText = agora.toLocaleDateString('pt-br', { day: 'numeric', month: 'long', year: 'numeric' });
     }
 
-    async function buscarClima() {
-        try {
-            const [resAtual, resPrev] = await Promise.all([
-                fetch(`https://api.openweathermap.org/data/2.5/weather?q=${cidadeAtual}&units=metric&lang=pt_br&appid=${API_KEY}`).then(res => res.json()),
-                fetch(`https://api.openweathermap.org/data/2.5/forecast?q=${cidadeAtual}&units=metric&lang=pt_br&appid=${API_KEY}`).then(res => res.json())
-            ]);
-            
-            dadosClimaCache = { atual: resAtual, previsao: resPrev };
-            document.getElementById('local-atual').innerText = `${cidadeAtual.toUpperCase()}`;
-            rodizioClima(); 
-        } catch (e) { document.getElementById('conteudo-clima').innerText = "Erro Clima"; }
-    }
-
-    function rodizioClima() {
-        if (!dadosClimaCache || !dadosClimaCache.atual) return;
-        const cont = document.getElementById('conteudo-clima');
-        const tit = document.getElementById('titulo-clima');
-        
-        cont.classList.remove('fade');
-        void cont.offsetWidth; 
-        cont.classList.add('fade');
-
-        if (modoClima === 0) {
-            tit.innerText = "AGORA";
-            const r = dadosClimaCache.atual;
-            cont.innerHTML = `<div><img src="https://openweathermap.org/img/wn/${r.weather[0].icon}@4x.png" class="weather-icon"><div class="temp-valor">${Math.round(r.main.temp)}°C</div><b>${r.weather[0].description.toUpperCase()}</b></div>`;
-        } else if (modoClima === 1) {
-            tit.innerText = "PRÓXIMAS 3-4 HORAS";
-            // Filtra o próximo bloco de previsão disponível na API
-            const p = dadosClimaCache.previsao.list[0]; 
-            const desc = p.weather[0].description.toUpperCase();
-            cont.innerHTML = `
-                <div style="display:flex; flex-direction:column; align-items:center; justify-content:center;">
-                    <img src="https://openweathermap.org/img/wn/${p.weather[0].icon}@2x.png" style="width:70px;">
-                    <div style="font-size:2.8rem; font-weight:bold; margin-top:-10px;">${Math.round(p.main.temp)}°C</div>
-                    <div style="font-size:0.9rem; font-weight:bold;">TENDÊNCIA: ${desc}</div>
-                </div>`;
-        } else {
-            tit.innerText = "EXTREMOS";
-            const r = dadosClimaCache.atual;
-            cont.innerHTML = `<div style="padding:20px 0;"><div style="color:#d32f2f; font-size:1.8rem;">▲ ${Math.round(r.main.temp_max)}°C</div><div style="color:#1976d2; font-size:1.8rem;">▼ ${Math.round(r.main.temp_min)}°C</div></div>`;
-        }
-        modoClima = (modoClima + 1) % 3;
-    }
-
-    async function rodizioBase() {
-        const cont = document.getElementById('conteudo-base');
-        const tit = document.getElementById('titulo-base');
-        try {
-            if (modoBase === 0) {
-                tit.innerText = "CÂMBIO";
-                const r = await fetch('https://economia.awesomeapi.com.br/last/USD-BRL,EUR-BRL').then(res => res.json());
-                cont.innerHTML = `<table class="fade"><tr><td>USD</td><td class="txt-right">R$ ${parseFloat(r.USDBRL.bid).toFixed(2)}</td></tr><tr><td>EUR</td><td class="txt-right">R$ ${parseFloat(r.EURBRL.bid).toFixed(2)}</td></tr></table>`;
-            } else if (modoBase === 1) {
-                tit.innerText = "MERCADOS";
-                const r = await fetch('https://economia.awesomeapi.com.br/last/IBOV,NASDAQ').then(res => res.json()).catch(() => null);
-                const ibov = r ? Math.round(r.IBOV.bid).toLocaleString() : "128.432";
-                const nasdaq = r ? Math.round(r.NASDAQ.bid).toLocaleString() : "16.120";
-                cont.innerHTML = `<table class="fade"><tr><td>IBOVESPA</td><td class="txt-right">${ibov}</td></tr><tr><td>NASDAQ</td><td class="txt-right">${nasdaq}</td></tr></table>`;
-            } else {
-                tit.innerText = "AGENDA";
-                cont.innerHTML = `<div class="fade" style="text-align:left; font-size:1.1rem; padding-top:10px;">• Abertura B3: 10h<br>• Relatório Focus: 08h<br>• Petróleo WTI: +1.2%</div>`;
-            }
-        } catch (e) { cont.innerHTML = "Sincronizando..."; }
-        modoBase = (modoBase + 1) % 3;
-    }
-
-    async function rodizioNoticias() {
-        const cont = document.getElementById('container-noticia');
-        const j = jornais[indexNoticia];
-        const proxy = "https://api.allorigins.win/get?url=";
-
-        try {
-            const resp = await fetch(proxy + encodeURIComponent(j.rss));
-            const data = await resp.json();
-            const parser = new DOMParser();
-            const xml = parser.parseFromString(data.contents, "text/xml");
-            const titulo = xml.querySelector("item title").textContent;
-
-            cont.innerHTML = `<div class="fade"><img src="${j.logo}" class="logo-jornal"><div class="headline">${titulo}</div></div>`;
-        } catch (e) {
-            cont.innerHTML = `<div class="fade"><img src="${j.logo}" class="logo-jornal"><div class="headline">Sincronizando última hora...</div></div>`;
-        }
-        indexNoticia = (indexNoticia + 1) % jornais.length;
-    }
-
-    iniciar();
+    setInterval(atualizarTempo, 1000);
+    setInterval(rodizioNoticias, 20000);
+    setInterval(rodizioBase, 15000);
+    atualizarTempo(); rodizioNoticias(); rodizioBase();
 </script>
 </body>
 </html>
