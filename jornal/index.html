@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Chronicle - Digital Edition</title>
+    <title>The Chronicle - Notícias Online</title>
     <link href="https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&family=Old+Standard+TT:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Old Standard TT', serif; background: #f4f1ea; color: #1a1a1a; margin: 0; padding: 15px; display: flex; justify-content: center; }
@@ -15,17 +15,14 @@
         .main-content { display: grid; grid-template-columns: 310px 1fr; gap: 30px; }
         .sidebar { border-right: 2px solid #eee; padding-right: 20px; }
         h2 { font-size: 1.1rem; border-bottom: 2px solid #d32f2f; color: #d32f2f; padding-bottom: 5px; text-transform: uppercase; margin-top: 0; margin-bottom: 15px; }
-        .weather-section { height: 260px; text-align: center; margin-bottom: 25px; background: #f0f4f8; border-radius: 12px; border: 1px solid #d1d9e6; padding: 12px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; }
-        .temp-valor { font-size: 4.2rem; font-weight: bold; color: #1a1a1a; margin: 0; line-height: 1; }
-        .weather-icon { width: 90px; height: 90px; margin: -5px auto; }
-        table { width: 100%; font-size: 1.2rem; border-collapse: collapse; }
-        table td { padding: 12px 0; border-bottom: 1px solid #eee; font-weight: bold; }
-        .txt-right { text-align: right; color: #d32f2f; }
         .logo-jornal { height: 40px; object-fit: contain; margin-bottom: 15px; filter: grayscale(1); }
         .headline { font-size: 2.1rem; font-weight: bold; line-height: 1.1; color: #000; margin-bottom: 15px; min-height: 80px; }
         .noticia-imagem { width: 100%; height: 320px; object-fit: cover; border: 1px solid #000; margin-top: 10px; background: #eee; }
         .fade { animation: fadeIn 0.8s ease-out; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        table { width: 100%; font-size: 1.2rem; border-collapse: collapse; }
+        table td { padding: 12px 0; border-bottom: 1px solid #eee; font-weight: bold; }
+        .txt-right { text-align: right; color: #d32f2f; }
     </style>
 </head>
 <body>
@@ -40,65 +37,68 @@
     </header>
     <div class="main-content">
         <div class="sidebar">
-            <div class="weather-section">
-                <h2 style="border:none; margin:0;" id="titulo-clima">AGORA</h2>
-                <div id="conteudo-clima" class="fade">...</div>
-            </div>
-            <div class="base-sidebar-rodizio">
+            <div id="coluna-esquerda">
                 <h2 id="titulo-base">CÂMBIO</h2>
-                <div id="conteudo-base" class="fade">Iniciando...</div>
+                <div id="conteudo-base" class="fade">Iniciando câmbio...</div>
             </div>
         </div>
         <div class="content">
-            <h2>DESTAQUE</h2>
-            <div id="container-noticia" class="fade">Conectando à central de notícias...</div>
+            <h2>DESTAQUE DO MOMENTO</h2>
+            <div id="container-noticia" class="fade">Conectando aos servidores de notícias...</div>
         </div>
     </div>
 </div>
 
 <script>
+    // Lista de jornais com feeds estáveis
     const jornais = [
+        { nome: "G1", rss: "https://g1.globo.com/rss/g1/", logo: "https://s2-g1.glbimg.com/_0N0p7H4eO0_Xn0_Xn0_Xn0=/i.s3.glbimg.com/v1/AUTH_59edd422c1284fa893bb774f4b23d90b/static/g1/img/g1-logo.png" },
         { nome: "Metrópoles", rss: "https://www.metropoles.com/feed", logo: "https://www.metropoles.com/wp-content/themes/metropoles-2023/assets/img/logo-metropoles.png" },
-        { nome: "G1", rss: "https://g1.globo.com/index/feed/pagina-1.ghtml", logo: "https://s2-g1.glbimg.com/_0N0p7H4eO0_Xn0_Xn0_Xn0=/i.s3.glbimg.com/v1/AUTH_59edd422c1284fa893bb774f4b23d90b/static/g1/img/g1-logo.png" },
         { nome: "BBC Brasil", rss: "https://feeds.bbci.co.uk/portuguese/rss.xml", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/41/BBC_World_News_2022.svg/2560px-BBC_World_News_2022.svg.png" }
     ];
 
-    let indexNoticia = 0, modoBase = 0;
+    let indexNoticia = 0;
+    let modoBase = 0;
 
     async function rodizioNoticias() {
         const cont = document.getElementById('container-noticia');
         const j = jornais[indexNoticia];
-        // O rss2json converte o feed e resolve o problema de segurança do GitHub
-        const api = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(j.rss)}`;
+        
+        // Proxy rss2json para evitar erro de autorização/CORS no GitHub
+        const urlFinal = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(j.rss)}&api_key=00000000000000000000000000000000`; // Chave vazia funciona para testes
 
         try {
-            const resp = await fetch(api);
+            const resp = await fetch(urlFinal);
             const data = await resp.json();
-            if (data.status !== 'ok') throw new Error();
 
-            const item = data.items[0];
-            let img = item.enclosure.link || item.thumbnail || "";
-            
-            // Busca alternativa de imagem no conteúdo (especial para o G1)
-            if (!img && item.description) {
-                const match = item.description.match(/<img[^>]+src="([^">]+)"/);
-                if (match) img = match[1];
+            if (data.status !== 'ok') throw new Error("Erro no servidor");
+
+            const item = data.items[0]; // Pega a notícia mais recente
+            let imgUrl = item.enclosure.link || item.thumbnail || "";
+
+            // Tenta extrair imagem do texto se não estiver no campo padrão (comum no G1)
+            if (!imgUrl && item.description) {
+                const imgMatch = item.description.match(/<img[^>]+src="([^">]+)"/);
+                if (imgMatch) imgUrl = imgMatch[1];
             }
 
             cont.innerHTML = `
                 <div class="fade">
                     <img src="${j.logo}" class="logo-jornal">
                     <div class="headline">${item.title}</div>
-                    ${img ? `<img src="${img}" class="noticia-imagem">` : ''}
+                    ${imgUrl ? `<img src="${imgUrl}" class="noticia-imagem">` : '<div style="height:100px; background:#eee; display:flex; align-items:center; justify-content:center;">Sem imagem disponível</div>'}
                 </div>`;
         } catch (e) {
-            cont.innerHTML = "Atualizando manchetes...";
+            console.error("Erro ao buscar notícia:", e);
+            cont.innerHTML = `<div class="fade">Tentando carregar manchetes do ${j.nome}...</div>`;
         }
+
         indexNoticia = (indexNoticia + 1) % jornais.length;
     }
 
     async function rodizioBase() {
-        const cont = document.getElementById('conteudo-base'), tit = document.getElementById('titulo-base');
+        const cont = document.getElementById('conteudo-base');
+        const tit = document.getElementById('titulo-base');
         try {
             if (modoBase === 0) {
                 tit.innerText = "CÂMBIO";
@@ -126,10 +126,15 @@
         document.getElementById('data-atual').innerText = agora.toLocaleDateString('pt-br', { day: 'numeric', month: 'long', year: 'numeric' });
     }
 
+    // Inicialização
+    atualizarTempo();
+    rodizioNoticias();
+    rodizioBase();
+
+    // Timers
     setInterval(atualizarTempo, 1000);
-    setInterval(rodizioNoticias, 20000);
-    setInterval(rodizioBase, 15000);
-    atualizarTempo(); rodizioNoticias(); rodizioBase();
+    setInterval(rodizioNoticias, 15000); // Muda notícia a cada 15 segundos
+    setInterval(rodizioBase, 10000);
 </script>
 </body>
 </html>
