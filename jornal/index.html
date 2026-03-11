@@ -62,7 +62,7 @@
     let modoBase = 0;
     let indexNoticia = 0;
     
-    // Novas variáveis para o rodízio do tempo
+    // Variáveis para o rodízio do tempo
     let dadosClimaCache = null;
     let modoClima = 0;
 
@@ -84,7 +84,7 @@
         // Intervalos de rodízio
         setInterval(rodizioBase, 15000);
         setInterval(rodizioNoticias, 20000);
-        setInterval(rodizioClima, 10000); // Ativa o rodízio do tempo a cada 10s
+        setInterval(rodizioClima, 10000); // Carrossel do tempo
     }
 
     function atualizarTempo() {
@@ -95,32 +95,40 @@
 
     async function buscarClima() {
         try {
-            const r = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${cidadeAtual}&units=metric&lang=pt_br&appid=${API_KEY}`).then(res => res.json());
-            dadosClimaCache = r; 
+            // Busca clima atual e previsão simultaneamente
+            const [resAtual, resPrev] = await Promise.all([
+                fetch(`https://api.openweathermap.org/data/2.5/weather?q=${cidadeAtual}&units=metric&lang=pt_br&appid=${API_KEY}`).then(res => res.json()),
+                fetch(`https://api.openweathermap.org/data/2.5/forecast?q=${cidadeAtual}&units=metric&lang=pt_br&appid=${API_KEY}`).then(res => res.json())
+            ]);
+            
+            dadosClimaCache = { atual: resAtual, previsao: resPrev };
             document.getElementById('local-atual').innerText = `${cidadeAtual.toUpperCase()}`;
             rodizioClima(); 
         } catch (e) { document.getElementById('conteudo-clima').innerText = "Erro Clima"; }
     }
 
     function rodizioClima() {
-        if (!dadosClimaCache) return;
+        if (!dadosClimaCache || !dadosClimaCache.atual) return;
         const cont = document.getElementById('conteudo-clima');
         const tit = document.getElementById('titulo-clima');
         
-        // Limpa e aplica animação
         cont.classList.remove('fade');
         void cont.offsetWidth; 
         cont.classList.add('fade');
 
         if (modoClima === 0) {
             tit.innerText = "AGORA";
-            cont.innerHTML = `<div><img src="https://openweathermap.org/img/wn/${dadosClimaCache.weather[0].icon}@4x.png" class="weather-icon"><div class="temp-valor">${Math.round(dadosClimaCache.main.temp)}°C</div><b>${dadosClimaCache.weather[0].description.toUpperCase()}</b></div>`;
+            const r = dadosClimaCache.atual;
+            cont.innerHTML = `<div><img src="https://openweathermap.org/img/wn/${r.weather[0].icon}@4x.png" class="weather-icon"><div class="temp-valor">${Math.round(r.main.temp)}°C</div><b>${r.weather[0].description.toUpperCase()}</b></div>`;
         } else if (modoClima === 1) {
-            tit.innerText = "EXTREMOS";
-            cont.innerHTML = `<div style="padding:20px 0;"><div style="color:#d32f2f; font-size:1.8rem;">▲ ${Math.round(dadosClimaCache.main.temp_max)}°C</div><div style="color:#1976d2; font-size:1.8rem;">▼ ${Math.round(dadosClimaCache.main.temp_min)}°C</div></div>`;
+            tit.innerText = "PREVISÃO (3H)";
+            const p = dadosClimaCache.previsao.list[1];
+            const hora = p.dt_txt.split(' ')[1].substring(0,5);
+            cont.innerHTML = `<div><img src="https://openweathermap.org/img/wn/${p.weather[0].icon}@2x.png" style="width:70px; margin:10px auto;"><div style="font-size:2.5rem; font-weight:bold;">${Math.round(p.main.temp)}°C</div><p>SITUAÇÃO ÀS ${hora}H</p></div>`;
         } else {
-            tit.innerText = "DETALHES";
-            cont.innerHTML = `<div><div style="font-size:3rem; font-weight:bold; margin-top:10px;">${dadosClimaCache.main.humidity}%</div><p>UMIDADE RELATIVA</p></div>`;
+            tit.innerText = "EXTREMOS";
+            const r = dadosClimaCache.atual;
+            cont.innerHTML = `<div style="padding:20px 0;"><div style="color:#d32f2f; font-size:1.8rem;">▲ ${Math.round(r.main.temp_max)}°C</div><div style="color:#1976d2; font-size:1.8rem;">▼ ${Math.round(r.main.temp_min)}°C</div></div>`;
         }
         modoClima = (modoClima + 1) % 3;
     }
