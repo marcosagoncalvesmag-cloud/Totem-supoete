@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cachaça Express - Pagamento Simulado</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -117,39 +117,41 @@
     <div id="status-mensagem">Aguardando leitura do QR Code...</div>
 
     <div class="footer-nota">
-        Ambiente de Testes IoT • Broker: HiveMQ
+        Ambiente de Testes IoT • Broker: EMQX
     </div>
 </div>
 
 <script>
-    // Configurações de conexão MQTT (Devem bater com o futuro código do ESP8266)
-    const brokerMqtt = 'wss://broker.hivemq.com:8084/mqtt'; 
+    // Configurações de conexão para o Broker da EMQX via WebSocket Seguro (Porta 8084)
+    const brokerMqtt = 'wss://broker.emqx.io:8084/mqtt'; 
     const topicoComando = 'vending_machine/001/comando';
 
     function processarPagamentoSimulado() {
         const botao = document.getElementById('botaoPagar');
         const campoStatus = document.getElementById('status-mensagem');
         
-        // Trava o botão para evitar cliques duplos
         botao.disabled = true;
         campoStatus.innerHTML = "🔄 Comunicando com o banco de dados...";
         campoStatus.style.color = "#ff9f43";
 
-        // Conecta ao servidor MQTT usando WebSockets
-        const clienteMqtt = mqtt.connect(brokerMqtt);
+        // Gera um ID aleatório obrigatório para o navegador se identificar no servidor
+        const clientId = 'web_' + Math.random().toString(16).substr(2, 8);
+
+        // Abre a conexão exata aceita por navegadores no PC e Celular
+        const clienteMqtt = mqtt.connect(brokerMqtt, { clientId: clientId });
 
         clienteMqtt.on('connect', function () {
             campoStatus.innerHTML = "✅ Pagamento aprovado! Enviando ordem para a máquina...";
             campoStatus.style.color = "#10ac84";
 
-            // Envia o comando exato que o ESP8266 vai ler
-            clienteMqtt.publish(topicoComando, 'liberar_dose_padrao', { qos: 1 }, function() {
+            // Dispara a mensagem para a nuvem
+            clienteMqtt.publish(topicoComando, 'liberar_dose_padrao', { qos: 0 }, function() {
                 campoStatus.innerHTML = "🥃 Dose liberada com sucesso! Retire no local.";
                 
-                // Desconecta o site do servidor para poupar recursos
+                // Fecha a conexão do navegador para não travar o canal
                 clienteMqtt.end();
                 
-                // Reseta a tela após 6 segundos para o próximo teste
+                // Destrava o botão após 6 segundos para o próximo teste
                 setTimeout(() => {
                     botao.disabled = false;
                     campoStatus.innerHTML = "Aguardando novo pagamento...";
@@ -159,7 +161,7 @@
         });
 
         clienteMqtt.on('error', function (erro) {
-            campoStatus.innerHTML = "❌ Erro de conexão com o broker de testes.";
+            campoStatus.innerHTML = "❌ Erro de conexão com o servidor.";
             campoStatus.style.color = "#ee5253";
             botao.disabled = false;
             clienteMqtt.end();
