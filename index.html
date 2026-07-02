@@ -1,173 +1,105 @@
 <!DOCTYPE html>
+
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cachaça Express - Pagamento Simulado</title>
-    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #121212;
-            color: #ffffff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-        }
-        .container {
-            background-color: #1e1e1e;
-            border: 1px solid #333333;
-            border-radius: 20px;
-            padding: 30px;
-            max-width: 400px;
-            width: 100%;
-            text-align: center;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-        }
-        .header h1 {
-            font-size: 26px;
-            color: #ff9f43;
-            margin-bottom: 5px;
-        }
-        .header p {
-            color: #a0a0a0;
-            font-size: 14px;
-        }
-        .produto-info {
-            background-color: #2a2a2a;
-            border-radius: 12px;
-            padding: 20px;
-            margin: 25px 0;
-        }
-        .produto-nome {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-        .preco {
-            font-size: 38px;
-            font-weight: bold;
-            color: #10ac84;
-        }
-        .btn-pagar {
-            background-color: #10ac84;
-            color: white;
-            border: none;
-            padding: 16px;
-            font-size: 18px;
-            font-weight: bold;
-            border-radius: 12px;
-            cursor: pointer;
-            width: 100%;
-            transition: all 0.2s ease;
-            box-shadow: 0 4px 12px rgba(16, 172, 132, 0.3);
-        }
-        .btn-pagar:hover {
-            background-color: #1dd1a1;
-            transform: translateY(-2px);
-        }
-        .btn-pagar:active {
-            transform: translateY(0);
-        }
-        .btn-pagar:disabled {
-            background-color: #576574;
-            color: #95a5a6;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-        #status-mensagem {
-            margin-top: 20px;
-            font-size: 14px;
-            color: #ff9f43;
-            font-weight: 500;
-            min-height: 20px;
-        }
-        .footer-nota {
-            margin-top: 25px;
-            font-size: 11px;
-            color: #576574;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>Totem Bebidas</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      background: #111;
+      color: #fff;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .tela {
+      display: none;
+      width: 100%;
+      height: 100vh;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+
+    .ativa {
+      display: flex;
+    }
+
+    /* Tela inicial */
+    #inicio {
+      background: #000;
+      font-size: 2rem;
+      text-align: center;
+    }
+
+    /* Tela de bebidas */
+    #bebidas {
+      background: #111;
+      gap: 20px;
+    }
+
+    .botao {
+      width: 80%;
+      max-width: 400px;
+      padding: 20px;
+      font-size: 1.5rem;
+      border: none;
+      border-radius: 10px;
+      background: #00c853;
+      color: #fff;
+    }
+
+    .botao:active {
+      background: #009624;
+    }
+  </style>
+
 </head>
+
 <body>
 
-<div class="container">
-    <div class="header">
-        <h1>Cachaça Express 🥃</h1>
-        <p>Terminal de Autoatendimento</p>
-    </div>
+  <!-- Tela inicial -->
 
-    <div class="produto-info">
-        <div class="produto-nome">1 Dose Tradicional (50ml)</div>
-        <div class="preco">R$ 5,00</div>
-    </div>
+  <div id="inicio" class="tela ativa">
+    <div>TOQUE NA TELA PARA COMEÇAR</div>
+  </div>
 
-    <button class="btn-pagar" id="botaoPagar" onclick="processarPagamentoSimulado()">
-        CONFIRMAR PAGAMENTO (PIX)
-    </button>
+  <!-- Tela de bebidas -->
 
-    <div id="status-mensagem">Aguardando leitura do QR Code...</div>
+  <div id="bebidas" class="tela">
+    <button class="botao" onclick="selecionarBebida(1)">Gin + Energético 1</button>
+    <button class="botao" onclick="selecionarBebida(2)">Gin + Energético 2</button>
+    <button class="botao" onclick="selecionarBebida(3)">Gin Puro</button>
+  </div>
 
-    <div class="footer-nota">
-        Ambiente de Testes IoT • Broker: EMQX
-    </div>
-</div>
+  <script>
+    const telaInicio = document.getElementById("inicio");
+    const telaBebidas = document.getElementById("bebidas");
 
-<script>
-    // Configurações de conexão para o Broker da EMQX via WebSocket Seguro (Porta 8084)
-    const brokerMqtt = 'wss://broker.emqx.io:8084/mqtt'; 
-    const topicoComando = 'vending_machine/001/comando';
+    // Clique na tela inicial
+    telaInicio.addEventListener("click", () => {
+      telaInicio.classList.remove("ativa");
+      telaBebidas.classList.add("ativa");
+    });
 
-    function processarPagamentoSimulado() {
-        const botao = document.getElementById('botaoPagar');
-        const campoStatus = document.getElementById('status-mensagem');
-        
-        botao.disabled = true;
-        campoStatus.innerHTML = "🔄 Comunicando com o banco de dados...";
-        campoStatus.style.color = "#ff9f43";
+    function selecionarBebida(tipo) {
+      console.log("Bebida escolhida:", tipo);
 
-        // Gera um ID aleatório obrigatório para o navegador se identificar no servidor
-        const clientId = 'web_' + Math.random().toString(16).substr(2, 8);
+      // Aqui depois você vai chamar o servidor
+      // fetch("URL_DO_SERVIDOR", {...})
 
-        // Abre a conexão exata aceita por navegadores no PC e Celular
-        const clienteMqtt = mqtt.connect(brokerMqtt, { clientId: clientId });
-
-        clienteMqtt.on('connect', function () {
-            campoStatus.innerHTML = "✅ Pagamento aprovado! Enviando ordem para a máquina...";
-            campoStatus.style.color = "#10ac84";
-
-            // Dispara a mensagem para a nuvem
-            clienteMqtt.publish(topicoComando, 'liberar_dose_padrao', { qos: 0 }, function() {
-                campoStatus.innerHTML = "🥃 Dose liberada com sucesso! Retire no local.";
-                
-                // Fecha a conexão do navegador para não travar o canal
-                clienteMqtt.end();
-                
-                // Destrava o botão após 6 segundos para o próximo teste
-                setTimeout(() => {
-                    botao.disabled = false;
-                    campoStatus.innerHTML = "Aguardando novo pagamento...";
-                    campoStatus.style.color = "#ff9f43";
-                }, 6000);
-            });
-        });
-
-        clienteMqtt.on('error', function (erro) {
-            campoStatus.innerHTML = "❌ Erro de conexão com o servidor.";
-            campoStatus.style.color = "#ee5253";
-            botao.disabled = false;
-            clienteMqtt.end();
-        });
+      alert("Selecionado: " + tipo);
     }
-</script>
+  </script>
 
 </body>
 </html>
